@@ -1,0 +1,7 @@
+[
+{
+  "directory": "C:/Users/igadu/DOX/Edu/UNAM_fi/DS_2024-1/CGA/FRGM_projects/ComputacionGraficaAvanzada/01-FRGM/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -DBUILDING_DLL @CMakeFiles/01-FRGM.dir/includes_CXX.rsp -g -o CMakeFiles\\01-FRGM.dir\\src\\main.obj -c C:\\Users\\igadu\\DOX\\Edu\\UNAM_fi\\DS_2024-1\\CGA\\FRGM_projects\\ComputacionGraficaAvanzada\\01-FRGM\\src\\main.cpp",
+  "file": "C:/Users/igadu/DOX/Edu/UNAM_fi/DS_2024-1/CGA/FRGM_projects/ComputacionGraficaAvanzada/01-FRGM/src/main.cpp"
+}
+]

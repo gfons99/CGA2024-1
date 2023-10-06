@@ -6,5 +6,6 @@ add_subdirectory(00-Introduccion)
 add_subdirectory(01-AnimacionKeyFrames)
 add_subdirectory(02-SkeletonAnimation)
 add_subdirectory(03-Terrain)
+add_subdirectory(04-TerrainBlendMap)
 
 add_subdirectory(01-FRGM)

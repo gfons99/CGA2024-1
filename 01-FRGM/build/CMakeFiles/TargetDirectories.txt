@@ -1,0 +1,3 @@
+C:/Users/igadu/DOX/Edu/UNAM_fi/DS_2024-1/CGA/FRGM_projects/ComputacionGraficaAvanzada/01-FRGM/build/CMakeFiles/01-FRGM.dir
+C:/Users/igadu/DOX/Edu/UNAM_fi/DS_2024-1/CGA/FRGM_projects/ComputacionGraficaAvanzada/01-FRGM/build/CMakeFiles/edit_cache.dir
+C:/Users/igadu/DOX/Edu/UNAM_fi/DS_2024-1/CGA/FRGM_projects/ComputacionGraficaAvanzada/01-FRGM/build/CMakeFiles/rebuild_cache.dir

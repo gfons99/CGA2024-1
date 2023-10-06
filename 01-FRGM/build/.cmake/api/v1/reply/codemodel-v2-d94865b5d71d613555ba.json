@@ -1,0 +1,56 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "Project",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "01-FRGM::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-01-FRGM-Debug-e0d437a90b8ab3965ab7.json",
+					"name" : "01-FRGM",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/igadu/DOX/Edu/UNAM_fi/DS_2024-1/CGA/FRGM_projects/ComputacionGraficaAvanzada/01-FRGM/build",
+		"source" : "C:/Users/igadu/DOX/Edu/UNAM_fi/DS_2024-1/CGA/FRGM_projects/ComputacionGraficaAvanzada/01-FRGM"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 4
+	}
+}
