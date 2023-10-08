@@ -10,3 +10,4 @@ add_subdirectory(04-TerrainBlendMap)
 add_subdirectory(05-MultipleLights)
 
 add_subdirectory(01-FRGM)
+add_subdirectory(03-FRGM_tarea)
