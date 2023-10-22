@@ -8,6 +8,8 @@ add_subdirectory(02-SkeletonAnimation)
 add_subdirectory(03-Terrain)
 add_subdirectory(04-TerrainBlendMap)
 add_subdirectory(05-MultipleLights)
+add_subdirectory(06-CameraTPS)
+add_subdirectory(07-Colisiones)
 
 add_subdirectory(01-FRGM)
 add_subdirectory(03-FRGM_tarea)
