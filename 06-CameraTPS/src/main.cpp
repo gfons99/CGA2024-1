@@ -806,179 +806,339 @@ bool processInput(bool continueApplication)
 		return false;
 	}
 
-	// if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-	// 	camera->moveFrontCamera(true, deltaTime);
-	// if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-	// 	camera->moveFrontCamera(false, deltaTime);
-	// if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-	// 	camera->moveRightCamera(false, deltaTime);
-	// if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-	// 	camera->moveRightCamera(true, deltaTime);
-	// if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-	// 	camera->mouseMoveCamera(offsetX, offsetY, deltaTime);
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-		camera->mouseMoveCamera(offsetX, 0, deltaTime);
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-		camera->mouseMoveCamera(0, offsetY, deltaTime);
-
-	offsetX = 0;
-	offsetY = 0;
-
-	// Seleccionar modelo
-	if (enableCountSelected && glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
+	// MOUSE & KEYBOARD
 	{
-		enableCountSelected = false;
-		modelSelected++;
-		if (modelSelected > 4)
-			modelSelected = 0;
-		if (modelSelected == 1)
-			fileName = "../animaciones/animation_dart_joints.txt";
-		if (modelSelected == 2)
-			fileName = "../animaciones/animation_dart.txt";
-		if (modelSelected == 3)
-			fileName = "../animaciones/animation_buzz_joints.txt";
-		if (modelSelected == 4)
-			fileName = "../animaciones/animation_buzz.txt";
-		std::cout << "modelSelected:" << modelSelected << std::endl;
-	}
-	else if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_RELEASE)
-		enableCountSelected = true;
+		// if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		// 	camera->moveFrontCamera(true, deltaTime);
+		// if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		// 	camera->moveFrontCamera(false, deltaTime);
+		// if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		// 	camera->moveRightCamera(false, deltaTime);
+		// if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		// 	camera->moveRightCamera(true, deltaTime);
+		// if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+		// 	camera->mouseMoveCamera(offsetX, offsetY, deltaTime);
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+			camera->mouseMoveCamera(offsetX, 0, deltaTime);
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+			camera->mouseMoveCamera(0, offsetY, deltaTime);
 
-	// Guardar key frames
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-	{
-		record = true;
-		if (myfile.is_open())
+		offsetX = 0;
+		offsetY = 0;
+
+		// Seleccionar modelo
+		if (enableCountSelected && glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
+		{
+			enableCountSelected = false;
+			modelSelected++;
+			if (modelSelected > 4)
+				modelSelected = 0;
+			if (modelSelected == 1)
+				fileName = "../animaciones/animation_dart_joints.txt";
+			if (modelSelected == 2)
+				fileName = "../animaciones/animation_dart.txt";
+			if (modelSelected == 3)
+				fileName = "../animaciones/animation_buzz_joints.txt";
+			if (modelSelected == 4)
+				fileName = "../animaciones/animation_buzz.txt";
+			std::cout << "modelSelected:" << modelSelected << std::endl;
+		}
+		else if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_RELEASE)
+			enableCountSelected = true;
+
+		// Guardar key frames
+		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+		{
+			record = true;
+			if (myfile.is_open())
+				myfile.close();
+			myfile.open(fileName);
+		}
+		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE && glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+		{
+			record = false;
 			myfile.close();
-		myfile.open(fileName);
-	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE && glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-	{
-		record = false;
-		myfile.close();
-		if (modelSelected == 1)
-			keyFramesDartJoints = getKeyRotFrames(fileName);
-		if (modelSelected == 2)
-			keyFramesDart = getKeyFrames(fileName);
-		if (modelSelected == 3)
-			keyFramesBuzzJoints = getKeyRotFrames(fileName);
-		if (modelSelected == 4)
-			keyFramesBuzz = getKeyFrames(fileName);
-	}
-	if (availableSave && glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
-	{
-		saveFrame = true;
-		availableSave = false;
-	}
-	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_RELEASE)
-		availableSave = true;
+			if (modelSelected == 1)
+				keyFramesDartJoints = getKeyRotFrames(fileName);
+			if (modelSelected == 2)
+				keyFramesDart = getKeyFrames(fileName);
+			if (modelSelected == 3)
+				keyFramesBuzzJoints = getKeyRotFrames(fileName);
+			if (modelSelected == 4)
+				keyFramesBuzz = getKeyFrames(fileName);
+		}
+		if (availableSave && glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS)
+		{
+			saveFrame = true;
+			availableSave = false;
+		}
+		if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_RELEASE)
+			availableSave = true;
 
-	// Dart Lego model movements
-	if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
-		glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-		rotDartHead += 0.02;
-	else if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
-			 glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-		rotDartHead -= 0.02;
-	if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
-		glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-		rotDartLeftArm += 0.02;
-	else if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
-			 glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-		rotDartLeftArm -= 0.02;
-	if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
-		glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
-		rotDartRightArm += 0.02;
-	else if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
-			 glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
-		rotDartRightArm -= 0.02;
-	if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
-		glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
-		rotDartLeftHand += 0.02;
-	else if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
-			 glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
-		rotDartLeftHand -= 0.02;
-	if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
-		glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS)
-		rotDartRightHand += 0.02;
-	else if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
-			 glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS)
-		rotDartRightHand -= 0.02;
-	if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
-		glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS)
-		rotDartLeftLeg += 0.02;
-	else if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
-			 glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS)
-		rotDartLeftLeg -= 0.02;
-	if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
-		glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS)
-		rotDartRightLeg += 0.02;
-	else if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
-			 glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS)
-		rotDartRightLeg -= 0.02;
-	if (modelSelected == 2 && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-		modelMatrixDart = glm::rotate(modelMatrixDart, 0.02f, glm::vec3(0, 1, 0));
-	else if (modelSelected == 2 && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-		modelMatrixDart = glm::rotate(modelMatrixDart, -0.02f, glm::vec3(0, 1, 0));
-	if (modelSelected == 2 && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-		modelMatrixDart = glm::translate(modelMatrixDart, glm::vec3(-0.02, 0.0, 0.0));
-	else if (modelSelected == 2 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-		modelMatrixDart = glm::translate(modelMatrixDart, glm::vec3(0.02, 0.0, 0.0));
+		// Dart Lego model movements
+		if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
+			glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+			rotDartHead += 0.02;
+		else if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
+				 glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+			rotDartHead -= 0.02;
+		if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
+			glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+			rotDartLeftArm += 0.02;
+		else if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
+				 glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+			rotDartLeftArm -= 0.02;
+		if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
+			glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+			rotDartRightArm += 0.02;
+		else if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
+				 glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+			rotDartRightArm -= 0.02;
+		if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
+			glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
+			rotDartLeftHand += 0.02;
+		else if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
+				 glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
+			rotDartLeftHand -= 0.02;
+		if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
+			glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS)
+			rotDartRightHand += 0.02;
+		else if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
+				 glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS)
+			rotDartRightHand -= 0.02;
+		if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
+			glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS)
+			rotDartLeftLeg += 0.02;
+		else if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
+				 glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS)
+			rotDartLeftLeg -= 0.02;
+		if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
+			glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS)
+			rotDartRightLeg += 0.02;
+		else if (modelSelected == 1 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
+				 glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS)
+			rotDartRightLeg -= 0.02;
+		if (modelSelected == 2 && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+			modelMatrixDart = glm::rotate(modelMatrixDart, 0.02f, glm::vec3(0, 1, 0));
+		else if (modelSelected == 2 && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+			modelMatrixDart = glm::rotate(modelMatrixDart, -0.02f, glm::vec3(0, 1, 0));
+		if (modelSelected == 2 && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+			modelMatrixDart = glm::translate(modelMatrixDart, glm::vec3(-0.02, 0.0, 0.0));
+		else if (modelSelected == 2 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+			modelMatrixDart = glm::translate(modelMatrixDart, glm::vec3(0.02, 0.0, 0.0));
 
-	// Movimientos de buzz
-	if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
-		glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-		rotBuzzHead += 0.02;
-	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
-			 glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-		rotBuzzHead -= 0.02;
-	if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
-		glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-		rotBuzzLeftarm += 0.02;
-	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
-			 glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-		rotBuzzLeftarm -= 0.02;
-	if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
-		glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
-		rotBuzzLeftForeArm += 0.02;
-	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
-			 glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
-		rotBuzzLeftForeArm -= 0.02;
-	if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
-		glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
-		rotBuzzLeftHand += 0.02;
-	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
-			 glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
-		rotBuzzLeftHand -= 0.02;
-	if (modelSelected == 4 && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-		modelMatrixBuzz = glm::rotate(modelMatrixBuzz, 0.02f, glm::vec3(0, 1, 0));
-	else if (modelSelected == 2 && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-		modelMatrixBuzz = glm::rotate(modelMatrixBuzz, -0.02f, glm::vec3(0, 1, 0));
-	if (modelSelected == 4 && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-		modelMatrixBuzz = glm::translate(modelMatrixBuzz, glm::vec3(0.0, 0.0, 0.02));
-	else if (modelSelected == 2 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-		modelMatrixBuzz = glm::translate(modelMatrixBuzz, glm::vec3(0.0, 0.0, -0.02));
+		// Movimientos de buzz
+		if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
+			glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+			rotBuzzHead += 0.02;
+		else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
+				 glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+			rotBuzzHead -= 0.02;
+		if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
+			glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+			rotBuzzLeftarm += 0.02;
+		else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
+				 glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+			rotBuzzLeftarm -= 0.02;
+		if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
+			glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+			rotBuzzLeftForeArm += 0.02;
+		else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
+				 glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+			rotBuzzLeftForeArm -= 0.02;
+		if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE &&
+			glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
+			rotBuzzLeftHand += 0.02;
+		else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS &&
+				 glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
+			rotBuzzLeftHand -= 0.02;
+		if (modelSelected == 4 && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+			modelMatrixBuzz = glm::rotate(modelMatrixBuzz, 0.02f, glm::vec3(0, 1, 0));
+		else if (modelSelected == 2 && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+			modelMatrixBuzz = glm::rotate(modelMatrixBuzz, -0.02f, glm::vec3(0, 1, 0));
+		if (modelSelected == 4 && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+			modelMatrixBuzz = glm::translate(modelMatrixBuzz, glm::vec3(0.0, 0.0, 0.02));
+		else if (modelSelected == 2 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+			modelMatrixBuzz = glm::translate(modelMatrixBuzz, glm::vec3(0.0, 0.0, -0.02));
 
-	// Controles de mayow
-	if (modelSelected == 0 && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-	{
-		modelMatrixMayow = glm::rotate(modelMatrixMayow, 0.02f, glm::vec3(0, 1, 0));
-		animationMayowIndex = 0;
+		// Controles de mayow
+		if (modelSelected == 0 && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+		{
+			modelMatrixMayow = glm::rotate(modelMatrixMayow, 0.02f, glm::vec3(0, 1, 0));
+			animationMayowIndex = 0;
+		}
+		else if (modelSelected == 0 && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+		{
+			modelMatrixMayow = glm::rotate(modelMatrixMayow, -0.02f, glm::vec3(0, 1, 0));
+			animationMayowIndex = 0;
+		}
+		if (modelSelected == 0 && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+		{
+			modelMatrixMayow = glm::translate(modelMatrixMayow, glm::vec3(0.0, 0.0, 0.02));
+			animationMayowIndex = 0;
+		}
+		else if (modelSelected == 0 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+		{
+			modelMatrixMayow = glm::translate(modelMatrixMayow, glm::vec3(0.0, 0.0, -0.02));
+			animationMayowIndex = 0;
+		}
 	}
-	else if (modelSelected == 0 && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+
+	// XBOX CONTROLLER
 	{
-		modelMatrixMayow = glm::rotate(modelMatrixMayow, -0.02f, glm::vec3(0, 1, 0));
-		animationMayowIndex = 0;
-	}
-	if (modelSelected == 0 && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-	{
-		modelMatrixMayow = glm::translate(modelMatrixMayow, glm::vec3(0.0, 0.0, 0.02));
-		animationMayowIndex = 0;
-	}
-	else if (modelSelected == 0 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-	{
-		modelMatrixMayow = glm::translate(modelMatrixMayow, glm::vec3(0.0, 0.0, -0.02));
-		animationMayowIndex = 0;
+		int joyCount;
+		const float *axes;
+		const unsigned char *buttons;
+
+		#define XBOX_GAMEPAD_BUTTON_LEFT_THUMB		8
+		#define XBOX_GAMEPAD_BUTTON_RIGHT_THUMB		9
+
+		#define XBOX_GAMEPAD_BUTTON_DPAD_UP			10
+		#define XBOX_GAMEPAD_BUTTON_DPAD_RIGHT      11
+		#define XBOX_GAMEPAD_BUTTON_DPAD_DOWN       12
+		#define XBOX_GAMEPAD_BUTTON_DPAD_LEFT       13
+
+		if (glfwJoystickPresent(GLFW_JOYSTICK_1))
+		{
+			axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &joyCount);
+			// std::cout << "joyCount1: " << joyCount << std::endl;
+			buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &joyCount);
+			// std::cout << "joyCount2: " << joyCount << std::endl;
+
+			// Process the axes and buttons
+			for (int i = 0; i < joyCount; i++)
+			{
+				// std::cout << "AXES LX" << axes[GLFW_GAMEPAD_AXIS_LEFT_X] << std::endl;
+				// std::cout << "AXES LY" << axes[GLFW_GAMEPAD_AXIS_LEFT_Y] << std::endl;
+				// std::cout << "AXES RX" << axes[GLFW_GAMEPAD_AXIS_RIGHT_X] << std::endl;
+				// std::cout << "AXES RY" << axes[GLFW_GAMEPAD_AXIS_RIGHT_Y] << std::endl;
+
+				// IDDLE:
+				// AXES LX	-0.0419776
+				// AXES LY	 0.0490883	-1 up +1 down
+				// AXES RX	 0.0455482
+				// AXES RY	-0.0864729
+
+				// LEFT JOYSTICK
+				if (axes[GLFW_GAMEPAD_AXIS_LEFT_X] > 0.2)
+				{
+					std::cout << "RIGHT" << std::endl;
+				}
+				else if(axes[GLFW_GAMEPAD_AXIS_LEFT_X] < -0.2)
+				{
+					std::cout << "LEFT" << std::endl;
+				}
+				if (axes[GLFW_GAMEPAD_AXIS_LEFT_Y] > 0.2)
+				{
+					std::cout << "DOWN" << std::endl;
+				}
+				else if(axes[GLFW_GAMEPAD_AXIS_LEFT_Y] < -0.2)
+				{
+					std::cout << "UP" << std::endl;
+				}
+				// RIGHT JOYSTICK
+				if (axes[GLFW_GAMEPAD_AXIS_RIGHT_X] > 0.2)
+				{
+					std::cout << "RIGHT" << std::endl;
+				}
+				else if(axes[GLFW_GAMEPAD_AXIS_RIGHT_X] < -0.2)
+				{
+					std::cout << "LEFT" << std::endl;
+				}
+				if (axes[GLFW_GAMEPAD_AXIS_RIGHT_Y] > 0.2)
+				{
+					std::cout << "DOWN" << std::endl;
+				}
+				else if(axes[GLFW_GAMEPAD_AXIS_RIGHT_Y] < -0.2)
+				{
+					std::cout << "UP" << std::endl;
+				}
+
+				std::cout << "LEFT_TRIGGER" << axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] << std::endl;
+				std::cout << "RIGHT_TRIGGER" << axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] << std::endl;
+
+				// IDDLE:
+				// LEFT_TRIGGER		-1
+				// RIGHT_TRIGGER	-1
+
+				// TRIGGERS
+				if (axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] > 0.5)
+				{
+					std::cout << "GLFW_GAMEPAD_AXIS_LEFT_TRIGGER" << std::endl;
+				}
+				if (axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] > 0.5)
+				{
+					std::cout << "GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER" << std::endl;
+				}
+
+				// BUTTONS
+				if (buttons[GLFW_GAMEPAD_BUTTON_A] == GLFW_PRESS)
+				{
+					std::cout << "GLFW_GAMEPAD_BUTTON_A" << std::endl;
+				}
+				if (buttons[GLFW_GAMEPAD_BUTTON_B] == GLFW_PRESS)
+				{
+					std::cout << "GLFW_GAMEPAD_BUTTON_B" << std::endl;
+				}
+				if (buttons[GLFW_GAMEPAD_BUTTON_X] == GLFW_PRESS)
+				{
+					std::cout << "GLFW_GAMEPAD_BUTTON_X" << std::endl;
+				}
+				if (buttons[GLFW_GAMEPAD_BUTTON_Y] == GLFW_PRESS)
+				{
+					std::cout << "GLFW_GAMEPAD_BUTTON_Y" << std::endl;
+				}
+
+				if (buttons[GLFW_GAMEPAD_BUTTON_LEFT_BUMPER] == GLFW_PRESS)
+				{
+					std::cout << "GLFW_GAMEPAD_BUTTON_LEFT_BUMPER" << std::endl;
+				}
+				if (buttons[GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER] == GLFW_PRESS)
+				{
+					std::cout << "GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER" << std::endl;
+				}
+
+				if (buttons[GLFW_GAMEPAD_BUTTON_BACK] == GLFW_PRESS)
+				{
+					std::cout << "GLFW_GAMEPAD_BUTTON_BACK" << std::endl;
+				}
+				if (buttons[GLFW_GAMEPAD_BUTTON_START] == GLFW_PRESS)
+				{
+					std::cout << "GLFW_GAMEPAD_BUTTON_START" << std::endl;
+				}
+
+				if (buttons[XBOX_GAMEPAD_BUTTON_LEFT_THUMB] == GLFW_PRESS)
+				{
+					std::cout << "XBOX_GAMEPAD_BUTTON_LEFT_THUMB" << std::endl;
+				}
+				if (buttons[XBOX_GAMEPAD_BUTTON_RIGHT_THUMB] == GLFW_PRESS)
+				{
+					std::cout << "XBOX_GAMEPAD_BUTTON_RIGHT_THUMB" << std::endl;
+				}
+
+				if (buttons[XBOX_GAMEPAD_BUTTON_DPAD_UP] == GLFW_PRESS)
+				{
+					std::cout << "XBOX_GAMEPAD_BUTTON_DPAD_UP" << std::endl;
+				}
+				if (buttons[XBOX_GAMEPAD_BUTTON_DPAD_RIGHT] == GLFW_PRESS)
+				{
+					std::cout << "XBOX_GAMEPAD_BUTTON_DPAD_RIGHT" << std::endl;
+				}
+				if (buttons[XBOX_GAMEPAD_BUTTON_DPAD_DOWN] == GLFW_PRESS)
+				{
+					std::cout << "XBOX_GAMEPAD_BUTTON_DPAD_DOWN" << std::endl;
+				}
+				if (buttons[XBOX_GAMEPAD_BUTTON_DPAD_LEFT] == GLFW_PRESS)
+				{
+					std::cout << "XBOX_GAMEPAD_BUTTON_DPAD_LEFT" << std::endl;
+				}
+			}
+			// std::cout << "GLFW_JOYSTICK_1" << std::endl;
+		}
+		else
+		{
+			std::cout << "GLFW_JOYSTICK_1 FAILED" << std::endl;
+		}
 	}
 
 	glfwPollEvents();
@@ -1069,11 +1229,11 @@ void applicationLoop()
 			angleTarget = glm::angle(glm::quat_cast(modelMatrixMayow));
 			axis = glm::axis(glm::quat_cast(modelMatrixMayow));
 		}
-		if(std::isnan(angleTarget))
+		if (std::isnan(angleTarget))
 		{
 			angleTarget = 0;
 		}
-		if(axis.y < 0)
+		if (axis.y < 0)
 		{
 			angleTarget = -angleTarget;
 		}
@@ -1081,9 +1241,9 @@ void applicationLoop()
 		{
 			angleTarget -= glm::radians(90.0);
 		}
-		camera -> setAngleTarget(angleTarget);
-		camera -> setCameraTarget(target);
-		camera -> updateCamera();
+		camera->setAngleTarget(angleTarget);
+		camera->setCameraTarget(target);
+		camera->updateCamera();
 
 		glm::mat4 view = camera->getViewMatrix();
 
