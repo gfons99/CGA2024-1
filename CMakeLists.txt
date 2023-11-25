@@ -13,6 +13,8 @@ add_subdirectory(07-Colisiones)
 add_subdirectory(08-DepthTesting)
 add_subdirectory(09-Blending)
 add_subdirectory(10-Fog)
+add_subdirectory(11-OpenAL)
+add_subdirectory(12-ShadowMapping)
 
 add_subdirectory(01-FRGM)
 add_subdirectory(03-FRGM_tarea)

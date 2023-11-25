@@ -45,6 +45,9 @@
 // Include Colision headers functions
 #include "Headers/Colisiones.h"
 
+// OpenAL include
+#include <AL/alut.h>
+
 #define ARRAY_SIZE_IN_ELEMENTS(a) (sizeof(a)/sizeof(a[0]))
 
 int screenWidth;
@@ -121,6 +124,8 @@ Model cowboyModelAnimate;
 Model guardianModelAnimate;
 // Cybog
 Model cyborgModelAnimate;
+// Fountain
+Model modelFountain;
 // Terrain model instance
 Terrain terrain(-1, -1, 200, 8, "../Textures/heightmap.png");
 
@@ -165,6 +170,7 @@ glm::mat4 modelMatrixMayow = glm::mat4(1.0f);
 glm::mat4 modelMatrixCowboy = glm::mat4(1.0f);
 glm::mat4 modelMatrixGuardian = glm::mat4(1.0f);
 glm::mat4 modelMatrixCyborg = glm::mat4(1.0f);
+glm::mat4 modelMatrixFountain = glm::mat4(1.0f);
 
 int animationMayowIndex = 1;
 float rotDartHead = 0.0, rotDartLeftArm = 0.0, rotDartLeftHand = 0.0, rotDartRightArm = 0.0, rotDartRightHand = 0.0, rotDartLeftLeg = 0.0, rotDartRightLeg = 0.0;
@@ -257,6 +263,36 @@ std::map<std::string, std::tuple<AbstractModel::SBB, glm::mat4, glm::mat4> > col
 // Variables animacion maquina de estados eclipse
 const float avance = 0.1;
 const float giroEclipse = 0.5f;
+
+// Definiciones de OpenAL
+#define NUM_BUFFERS 3
+#define NUM_SOURCES 3
+#define NUM_ENVIRONMENTS 1
+// Listener
+ALfloat listenerPos[] = {0.0, 0.0, 0.0};
+ALfloat listenerVel[] = {0.0, 0.0, 0.0};
+ALfloat listenerOri[] = {0.0, 0.0, 1.0, 0.0, 1.0, 0.0};
+// Source 0
+ALfloat source0Pos[] = {0.0, 0.0, 0.0};
+ALfloat source0Vel[] = {0.0, 0.0, 0.0};
+// Source 1
+ALfloat source1Pos[] = {0.0, 0.0, 0.0};
+ALfloat source1Vel[] = {0.0, 0.0, 0.0};
+// Source 2
+ALfloat source2Pos[] = {0.0, 0.0, 0.0};
+ALfloat source2Vel[] = {0.0, 0.0, 0.0};
+// Buffers
+ALuint buffer[NUM_BUFFERS];
+ALuint source[NUM_SOURCES];
+ALuint environment[NUM_ENVIRONMENTS];
+// Variables de configuración
+ALsizei size, freq;
+ALenum format;
+ALvoid *data;
+int ch;
+ALboolean loop;
+std::vector<bool> sourcesPlay = {false, false, true};
+
 
 // Se definen todos las funciones.
 void reshapeCallback(GLFWwindow *Window, int widthRes, int heightRes);
@@ -458,6 +494,10 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	// Cyborg
 	cyborgModelAnimate.loadModel("../models/cyborg/cyborg.fbx");
 	cyborgModelAnimate.setShader(&shaderMulLighting);
+
+	//Fountain
+	modelFountain.loadModel("../models/fountain/fountain.obj");
+	modelFountain.setShader(&shaderMulLighting);
 
 	// Terreno
 	terrain.init();
@@ -763,6 +803,60 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 		std::cout << "Fallo la carga de textura" << std::endl;
 	textureScreen.freeImage(); // Liberamos memoria
 
+	/*******************************************
+	 * OpenAL init
+	 *******************************************/
+	alutInit(0, nullptr);
+	alListenerfv(AL_POSITION, listenerPos);
+	alListenerfv(AL_VELOCITY, listenerVel);
+	alListenerfv(AL_ORIENTATION, listenerOri);
+	alGetError(); // clear any error messages
+	if (alGetError() != AL_NO_ERROR) {
+		printf("- Error creating buffers !!\n");
+		exit(1);
+	}
+	else {
+		printf("init() - No errors yet.");
+	}
+	// Generate buffers, or else no sound will happen!
+	alGenBuffers(NUM_BUFFERS, buffer);
+	buffer[0] = alutCreateBufferFromFile("../sounds/fountain.wav");
+	buffer[1] = alutCreateBufferFromFile("../sounds/fire.wav");
+	buffer[2] = alutCreateBufferFromFile("../sounds/darth_vader.wav");
+	int errorAlut = alutGetError();
+	if (errorAlut != ALUT_ERROR_NO_ERROR){
+		printf("- Error open files with alut %d !!\n", errorAlut);
+		exit(2);
+	}
+
+	alGetError();
+	alGenSources(NUM_SOURCES, source);
+
+	if (alGetError() != AL_NO_ERROR) {
+		printf("- Error creating sources !!\n");
+		exit(2);
+	}
+	else {
+		printf("init - no errors after alGenSources\n");
+	}
+
+	alSourcef(source[0], AL_PITCH, 1.0f);
+	alSourcef(source[0], AL_GAIN, 3.0f);
+	alSourcei(source[0], AL_BUFFER, buffer[0]);
+	alSourcei(source[0], AL_LOOPING, AL_TRUE);
+	alSourcef(source[0], AL_MAX_DISTANCE, 2000);
+
+	alSourcef(source[1], AL_PITCH, 1.0f);
+	alSourcef(source[1], AL_GAIN, 0.5f);
+	alSourcei(source[1], AL_BUFFER, buffer[1]);
+	alSourcei(source[1], AL_LOOPING, AL_FALSE);
+	alSourcef(source[1], AL_MAX_DISTANCE, 1000);
+
+	alSourcef(source[2], AL_PITCH, 1.0f);
+	alSourcef(source[2], AL_GAIN, 0.3f);
+	alSourcei(source[2], AL_BUFFER, buffer[2]);
+	alSourcei(source[2], AL_LOOPING, AL_TRUE);
+	alSourcef(source[2], AL_MAX_DISTANCE, 2000);
 }
 
 void destroy() {
@@ -826,6 +920,7 @@ void destroy() {
 	cowboyModelAnimate.destroy();
 	guardianModelAnimate.destroy();
 	cyborgModelAnimate.destroy();
+	modelFountain.destroy();
 
 	// Terrains objects Delete
 	terrain.destroy();
@@ -1161,6 +1256,8 @@ void applicationLoop() {
 
 	modelMatrixCyborg = glm::translate(modelMatrixCyborg, glm::vec3(5.0f, 0.05, 0.0f));
 
+	modelMatrixFountain = glm::translate(modelMatrixFountain, glm::vec3(5.0, 0.0, -40.0));
+
 	// Variables to interpolation key frames
 	fileName = "../animaciones/animation_dart_joints.txt";
 	keyFramesDartJoints = getKeyRotFrames(fileName);
@@ -1241,11 +1338,7 @@ void applicationLoop() {
 		 * Propiedades de neblina
 		 *******************************************/
 		shaderMulLighting.setVectorFloat3("fogColor", glm::value_ptr(glm::vec3(0.5, 0.5, 0.4)));
-		shaderMulLighting.setFloat("density", 0.015);
-		shaderMulLighting.setFloat("gradient", 0.5);
 		shaderTerrain.setVectorFloat3("fogColor", glm::value_ptr(glm::vec3(0.5, 0.5, 0.4)));
-		shaderTerrain.setFloat("density", 0.015);
-		shaderTerrain.setFloat("gradient", 0.5);
 		shaderSkybox.setVectorFloat3("fogColor", glm::value_ptr(glm::vec3(0.5, 0.5, 0.4)));
 
 		/*******************************************
@@ -1386,10 +1479,6 @@ void applicationLoop() {
 		// Forze to enable the unit texture to 0 always ----------------- IMPORTANT
 		glActiveTexture(GL_TEXTURE0);
 
-		// Render for the aircraft model
-		/*modelMatrixAircraft[3][1] = terrain.getHeightTerrain(modelMatrixAircraft[3][0], modelMatrixAircraft[3][2]) + 2.0;
-		modelAircraft.render(modelMatrixAircraft);*/
-
 		// Render for the eclipse car
 		modelMatrixEclipse[3][1] = terrain.getHeightTerrain(modelMatrixEclipse[3][0], modelMatrixEclipse[3][2]);
 		glm::mat4 modelMatrixEclipseChasis = glm::mat4(modelMatrixEclipse);
@@ -1408,41 +1497,6 @@ void applicationLoop() {
 		modelMatrixRearWheels = glm::rotate(modelMatrixRearWheels, rotWheelsX, glm::vec3(1, 0, 0));
 		modelMatrixRearWheels = glm::translate(modelMatrixRearWheels, glm::vec3(0.0, -1.05813, 4.35157));
 		modelEclipseRearWheels.render(modelMatrixRearWheels);
-
-		// Helicopter
-		/*glm::mat4 modelMatrixHeliChasis = glm::mat4(modelMatrixHeli);
-		modelHeliChasis.render(modelMatrixHeliChasis);
-
-		glm::mat4 modelMatrixHeliHeli = glm::mat4(modelMatrixHeliChasis);
-		modelMatrixHeliHeli = glm::translate(modelMatrixHeliHeli, glm::vec3(0.0, 0.0, -0.249548));
-		modelMatrixHeliHeli = glm::rotate(modelMatrixHeliHeli, rotHelHelY, glm::vec3(0, 1, 0));
-		modelMatrixHeliHeli = glm::translate(modelMatrixHeliHeli, glm::vec3(0.0, 0.0, 0.249548));
-		modelHeliHeli.render(modelMatrixHeliHeli);
-		glm::mat4 modelMatrixHeliHeliBack = glm::mat4(modelMatrixHeliChasis);
-		modelMatrixHeliHeliBack = glm::translate(modelMatrixHeliHeliBack, glm::vec3(0.400524, 2.0928, -5.64124));
-		modelMatrixHeliHeliBack = glm::rotate(modelMatrixHeliHeliBack, rotHelHelBack, glm::vec3(1.0, 0.0, 0.0));
-		modelMatrixHeliHeliBack = glm::translate(modelMatrixHeliHeliBack, glm::vec3(-0.400524, -2.0928, 5.64124));
-		modelHeliHeliBack.render(modelMatrixHeliHeliBack);*/
-
-		// Lambo car
-		/*glDisable(GL_CULL_FACE);
-		glm::mat4 modelMatrixLamboChasis = glm::mat4(modelMatrixLambo);
-		modelMatrixLamboChasis[3][1] = terrain.getHeightTerrain(modelMatrixLamboChasis[3][0], modelMatrixLamboChasis[3][2]);
-		modelMatrixLamboChasis = glm::scale(modelMatrixLamboChasis, glm::vec3(1.3, 1.3, 1.3));
-		modelLambo.render(modelMatrixLamboChasis);
-		glActiveTexture(GL_TEXTURE0);
-		glm::mat4 modelMatrixLamboLeftDor = glm::mat4(modelMatrixLamboChasis);
-		modelMatrixLamboLeftDor = glm::translate(modelMatrixLamboLeftDor, glm::vec3(1.08866, 0.705743, 0.968917));
-		modelMatrixLamboLeftDor = glm::rotate(modelMatrixLamboLeftDor, glm::radians(dorRotCount), glm::vec3(1.0, 0, 0));
-		modelMatrixLamboLeftDor = glm::translate(modelMatrixLamboLeftDor, glm::vec3(-1.08866, -0.705743, -0.968917));
-		modelLamboLeftDor.render(modelMatrixLamboLeftDor);
-		modelLamboRightDor.render(modelMatrixLamboChasis);
-		modelLamboFrontLeftWheel.render(modelMatrixLamboChasis);
-		modelLamboFrontRightWheel.render(modelMatrixLamboChasis);
-		modelLamboRearLeftWheel.render(modelMatrixLamboChasis);
-		modelLamboRearRightWheel.render(modelMatrixLamboChasis);
-		// Se regresa el cull faces IMPORTANTE para las puertas
-		glEnable(GL_CULL_FACE);*/
 
 		// Render lamp
 		for(int i = 0; i < lamp1Position.size(); i++){
@@ -1562,6 +1616,7 @@ void applicationLoop() {
 		if(modelMatrixMayow[3][1] < terrain.getHeightTerrain(modelMatrixMayow[3][0], modelMatrixMayow[3][2])){
 			isJump = false;
 			modelMatrixMayow[3][1] = terrain.getHeightTerrain(modelMatrixMayow[3][0], modelMatrixMayow[3][2]);
+			alSourceStop(source[1]);
 		}
 		glm::mat4 modelMatrixMayowBody = glm::mat4(modelMatrixMayow);
 		modelMatrixMayowBody = glm::scale(modelMatrixMayowBody, glm::vec3(0.021f));
@@ -1584,6 +1639,13 @@ void applicationLoop() {
 		modelMatrixCyborgBody = glm::scale(modelMatrixCyborgBody, glm::vec3(0.009f));
 		cyborgModelAnimate.setAnimationIndex(1);
 		cyborgModelAnimate.render(modelMatrixCyborgBody);
+
+		// Fountain
+		glDisable(GL_CULL_FACE);
+		modelMatrixFountain[3][1] = terrain.getHeightTerrain(modelMatrixFountain[3][0] , modelMatrixFountain[3][2]) + 0.2;
+		glm::mat4 modelMatrixFountainCopy = glm::scale(modelMatrixFountain, glm::vec3(10.0f, 10.0f, 10.0f));
+		modelFountain.render(modelMatrixFountainCopy);
+		glEnable(GL_CULL_FACE);
 
 		/*******************************************
 		 * Skybox
@@ -2102,6 +2164,51 @@ void applicationLoop() {
 		rotHelHelBack += 0.5;
 
 		glfwSwapBuffers(window);
+		// ****** OpenAL Source Data ******
+		source0Pos[0] = modelMatrixFountain[3].x;
+		source0Pos[1] = modelMatrixFountain[3].y;
+		source0Pos[2] = modelMatrixFountain[3].z;
+
+		source1Pos[0] = modelMatrixGuardian[3].x;
+		source1Pos[1] = modelMatrixGuardian[3].y;
+		source1Pos[2] = modelMatrixGuardian[3].z;
+
+		source2Pos[0] = modelMatrixDart[3].x;
+		source2Pos[1] = modelMatrixDart[3].y;
+		source2Pos[2] = modelMatrixDart[3].z;
+
+		// Listener
+		listenerPos[0] = modelMatrixMayow[3].x;
+		listenerPos[1] = modelMatrixMayow[3].y;
+		listenerPos[2] = modelMatrixMayow[3].z;
+
+		glm::vec3 upModel = glm::normalize(modelMatrixMayow[1]);
+		glm::vec3 frontModel = glm::normalize(modelMatrixMayow[2]);
+
+		listenerOri[0] = frontModel.x;
+		listenerOri[1] = frontModel.y;
+		listenerOri[2] = frontModel.z;
+		listenerOri[3] = upModel.x;
+		listenerOri[4] = upModel.y;
+		listenerOri[5] = upModel.z;
+		
+		// Enviar al engine los sources y el listener
+		alSourcefv(source[0], AL_POSITION, source0Pos);
+		alSourcefv(source[0], AL_VELOCITY, source0Vel);
+		alSourcefv(source[1], AL_POSITION, source1Pos);
+		alSourcefv(source[1], AL_VELOCITY, source1Vel);
+		alSourcefv(source[2], AL_POSITION, source2Pos);
+		alSourcefv(source[2], AL_VELOCITY, source2Vel);
+		alListenerfv(AL_POSITION, listenerPos);
+
+		for(unsigned int i = 0; i < sourcesPlay.size(); i++)
+		{
+			if(sourcesPlay[i])
+			{
+				sourcesPlay[i] = false;
+				alSourcePlay(source[i]);
+			}
+		}
 	}
 }
 
