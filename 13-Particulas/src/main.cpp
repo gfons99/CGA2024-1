@@ -45,7 +45,7 @@
 // Include Colision headers functions
 #include "Headers/Colisiones.h"
 
-// ShadowBox include, es una caja que sigue al personaje
+// ShadowBox include
 #include "Headers/ShadowBox.h"
 
 // OpenAL include
@@ -67,12 +67,14 @@ Shader shaderSkybox;
 Shader shaderMulLighting;
 // Shader para el terreno
 Shader shaderTerrain;
-// Shader para un objeto con solo textura
+// Shader para dibujar un objeto con solo textura
 Shader shaderTexture;
-// Shader para el buffer de profunidad
+// Shader para dibujar el buffer de profunidad
 Shader shaderDepth;
-// Shader para visualizar (ayuda) el buffer de profundidad
+// Shader para visualizar el buffer de profundidad
 Shader shaderViewDepth;
+// Shader para las particulas de fountain
+Shader shaderParticlesFountain;
 
 std::shared_ptr<Camera> camera(new ThirdPersonCamera());
 float distanceFromTarget = 7.0;
@@ -139,12 +141,13 @@ Model modelFountain;
 // Terrain model instance
 Terrain terrain(-1, -1, 200, 8, "../Textures/heightmap.png");
 
-ShadowBox * shadowBox;
+ShadowBox *shadowBox;
 
 GLuint textureCespedID, textureWallID, textureWindowID, textureHighwayID, textureLandingPadID;
 GLuint textureTerrainRID, textureTerrainGID, textureTerrainBID, textureTerrainBlendMapID;
 GLuint skyboxTextureID;
 GLuint textureInit1ID, textureInit2ID, textureActivaID, textureScreenID;
+GLuint textureParticleFountainID;
 
 bool iniciaPartida = false, presionarOpcion = false;
 
@@ -302,6 +305,12 @@ std::vector<bool> sourcesPlay = {true, true, true};
 // Framesbuffers
 GLuint depthMap, depthMapFBO;
 
+// Definición del frame buffer
+GLuint initVel, startTime;
+GLuint VAOParticles;
+GLuint nParticles = 400;
+GLuint currTimeParticlesFountainAnimation, lastTimeParticulesFountainAnimation;
+
 // Se definen todos las funciones.
 void reshapeCallback(GLFWwindow *Window, int widthRes, int heightRes);
 void keyCallback(GLFWwindow *window, int key, int scancode, int action,
@@ -309,9 +318,76 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action,
 void mouseCallback(GLFWwindow *window, double xpos, double ypos);
 void mouseButtonCallback(GLFWwindow *window, int button, int state, int mod);
 void scrollCallback(GLFWwindow *window, double xoffset, double yoffset);
+void initParticleBuffers();
 void init(int width, int height, std::string strTitle, bool bFullScreen);
 void destroy();
 bool processInput(bool continueApplication = true);
+
+void initParticleBuffers()
+{
+	// Generate the buffers
+	glGenBuffers(1, &initVel);	 // Initial velocity buffer
+	glGenBuffers(1, &startTime); // Start time buffer
+
+	// Allocate space for all buffers
+	int size = nParticles * 3 * sizeof(float);
+	glBindBuffer(GL_ARRAY_BUFFER, initVel);
+	glBufferData(GL_ARRAY_BUFFER, size, NULL, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, startTime);
+	glBufferData(GL_ARRAY_BUFFER, nParticles * sizeof(float), NULL, GL_STATIC_DRAW);
+
+	// Fill the first velocity buffer with random velocities
+	glm::vec3 v(0.0f);
+	float velocity, theta, phi;
+	GLfloat *data = new GLfloat[nParticles * 3];
+	for (unsigned int i = 0; i < nParticles; i++)
+	{
+
+		theta = glm::mix(0.0f, glm::pi<float>() / 6.0f, ((float)rand() / RAND_MAX));
+		phi = glm::mix(0.0f, glm::two_pi<float>(), ((float)rand() / RAND_MAX));
+
+		v.x = sinf(theta) * cosf(phi);
+		v.y = cosf(theta);
+		v.z = sinf(theta) * sinf(phi);
+
+		velocity = glm::mix(0.6f, 0.8f, ((float)rand() / RAND_MAX));
+		v = glm::normalize(v) * velocity;
+
+		data[3 * i] = v.x;
+		data[3 * i + 1] = v.y;
+		data[3 * i + 2] = v.z;
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, initVel);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, size, data);
+
+	// Fill the start time buffer
+	delete[] data;
+	data = new GLfloat[nParticles];
+	float time = 0.0f;
+	float rate = 0.00075f;
+	for (unsigned int i = 0; i < nParticles; i++)
+	{
+		data[i] = time;
+		time += rate;
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, startTime);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, nParticles * sizeof(float), data);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	delete[] data;
+
+	glGenVertexArrays(1, &VAOParticles);
+	glBindVertexArray(VAOParticles);
+	glBindBuffer(GL_ARRAY_BUFFER, initVel);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, startTime);
+	glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(1);
+
+	glBindVertexArray(0);
+}
 
 // Implementacion de todas las funciones.
 void init(int width, int height, std::string strTitle, bool bFullScreen)
@@ -378,7 +454,8 @@ void init(int width, int height, std::string strTitle, bool bFullScreen)
 	shaderTerrain.initialize("../Shaders/terrain_shadow.vs", "../Shaders/terrain_shadow.fs");
 	shaderTexture.initialize("../Shaders/texturizado.vs", "../Shaders/texturizado.fs");
 	shaderViewDepth.initialize("../Shaders/texturizado.vs", "../Shaders/texturizado_depth_view.fs");
-	shaderDepth.initialize("../Shaders/shadow_mapping_depth.vs", "../Shaders/shadow_maping_depth.fs");
+	shaderDepth.initialize("../Shaders/shadow_mapping_depth.vs", "../Shaders/shadow_mapping_depth.fs");
+	shaderParticlesFountain.initialize("../Shaders/particlesFountain.vs", "../Shaders/particlesFountain.fs");
 
 	// Inicializacion de los objetos.
 	skyboxSphere.init();
@@ -838,6 +915,26 @@ void init(int width, int height, std::string strTitle, bool bFullScreen)
 		std::cout << "Fallo la carga de textura" << std::endl;
 	textureScreen.freeImage(); // Liberamos memoria
 
+	// Definiendo la textura
+	Texture textureParticlesFountain("../Textures/bluewater.png");
+	textureParticlesFountain.loadImage();							  // Cargar la textura
+	glGenTextures(1, &textureParticleFountainID);					  // Creando el id de la textura del landingpad
+	glBindTexture(GL_TEXTURE_2D, textureParticleFountainID);		  // Se enlaza la textura
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	  // Wrapping en el eje u
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);	  // Wrapping en el eje v
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // Filtering de minimización
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // Filtering de maximimizacion
+	if (textureParticlesFountain.getData())
+	{
+		// Transferir los datos de la imagen a la tarjeta
+		glTexImage2D(GL_TEXTURE_2D, 0, textureParticlesFountain.getChannels() == 3 ? GL_RGB : GL_RGBA, textureParticlesFountain.getWidth(), textureParticlesFountain.getHeight(), 0,
+					 textureParticlesFountain.getChannels() == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, textureParticlesFountain.getData());
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+		std::cout << "Fallo la carga de textura" << std::endl;
+	textureParticlesFountain.freeImage(); // Liberamos memoria
+
 	/*******************************************
 	 * OpenAL init
 	 *******************************************/
@@ -903,23 +1000,25 @@ void init(int width, int height, std::string strTitle, bool bFullScreen)
 	alSourcei(source[2], AL_LOOPING, AL_TRUE);
 	alSourcef(source[2], AL_MAX_DISTANCE, 2000);
 
-	// ******  Inicialización del framebuffer para almacenar la profunidad ******
+	/*******************************************
+	 * Inicializacion del framebuffer para
+	 * almacenar el buffer de profunidadad
+	 *******************************************/
 	glGenFramebuffers(1, &depthMapFBO);
 	glGenTextures(1, &depthMap);
 	glBindTexture(GL_TEXTURE_2D, depthMap);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	float boarderColor [] = {1.0, 1.0, 1.0, 1.0};
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, boarderColor);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+				 SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	float borderColor[] = {1.0, 1.0, 1.0, 1.0};
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
 	glDrawBuffer(GL_NONE);
-	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -935,6 +1034,7 @@ void destroy()
 	shaderMulLighting.destroy();
 	shaderSkybox.destroy();
 	shaderTerrain.destroy();
+	shaderParticlesFountain.destroy();
 
 	// Basic objects Delete
 	skyboxSphere.destroy();
@@ -947,6 +1047,7 @@ void destroy()
 	sphereCollider.destroy();
 	rayModel.destroy();
 	boxIntro.destroy();
+	boxViewDepth.destroy();
 
 	// Custom objects Delete
 	modelAircraft.destroy();
@@ -1004,6 +1105,7 @@ void destroy()
 	glDeleteTextures(1, &textureInit1ID);
 	glDeleteTextures(1, &textureInit2ID);
 	glDeleteTextures(1, &textureScreenID);
+	glDeleteTextures(1, &textureParticleFountainID);
 
 	// Cube Maps Delete
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
@@ -1680,55 +1782,76 @@ void renderSolidScene()
 void renderAlphaScene(bool render = true)
 {
 	/**********
+	 * Update the position with alpha objects
+	 */
+	// Update the aircraft
+	blendingUnsorted.find("aircraft")->second = glm::vec3(modelMatrixAircraft[3]);
+	// Update the lambo
+	blendingUnsorted.find("lambo")->second = glm::vec3(modelMatrixLambo[3]);
+	// Update the helicopter
+	blendingUnsorted.find("heli")->second = glm::vec3(modelMatrixHeli[3]);
+
+	/**********
+	 * Sorter with alpha objects
+	 */
+	std::map<float, std::pair<std::string, glm::vec3>> blendingSorted;
+	std::map<std::string, glm::vec3>::iterator itblend;
+	for (itblend = blendingUnsorted.begin(); itblend != blendingUnsorted.end(); itblend++)
+	{
+		float distanceFromView = glm::length(camera->getPosition() - itblend->second);
+		blendingSorted[distanceFromView] = std::make_pair(itblend->first, itblend->second);
+	}
+
+	/**********
 	 * Render de las transparencias
 	 */
-	// glEnable(GL_BLEND);
-	// glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	// glDisable(GL_CULL_FACE);
-	// for (std::map<float, std::pair<std::string, glm::vec3>>::reverse_iterator it = blendingSorted.rbegin(); it != blendingSorted.rend(); it++)
-	// {
-	// 	if (it->second.first.compare("aircraft") == 0)
-	// 	{
-	// 		// Render for the aircraft model
-	// 		glm::mat4 modelMatrixAircraftBlend = glm::mat4(modelMatrixAircraft);
-	// 		modelMatrixAircraftBlend[3][1] = terrain.getHeightTerrain(modelMatrixAircraftBlend[3][0], modelMatrixAircraftBlend[3][2]) + 2.0;
-	// 		modelAircraft.render(modelMatrixAircraftBlend);
-	// 	}
-	// 	else if (it->second.first.compare("lambo") == 0)
-	// 	{
-	// 		// Lambo car
-	// 		glm::mat4 modelMatrixLamboBlend = glm::mat4(modelMatrixLambo);
-	// 		modelMatrixLamboBlend[3][1] = terrain.getHeightTerrain(modelMatrixLamboBlend[3][0], modelMatrixLamboBlend[3][2]);
-	// 		modelMatrixLamboBlend = glm::scale(modelMatrixLamboBlend, glm::vec3(1.3, 1.3, 1.3));
-	// 		modelLambo.render(modelMatrixLamboBlend);
-	// 		glActiveTexture(GL_TEXTURE0);
-	// 		glm::mat4 modelMatrixLamboLeftDor = glm::mat4(modelMatrixLamboBlend);
-	// 		modelMatrixLamboLeftDor = glm::translate(modelMatrixLamboLeftDor, glm::vec3(1.08676, 0.707316, 0.982601));
-	// 		modelMatrixLamboLeftDor = glm::rotate(modelMatrixLamboLeftDor, glm::radians(dorRotCount), glm::vec3(1.0, 0, 0));
-	// 		modelMatrixLamboLeftDor = glm::translate(modelMatrixLamboLeftDor, glm::vec3(-1.08676, -0.707316, -0.982601));
-	// 		modelLamboLeftDor.render(modelMatrixLamboLeftDor);
-	// 		modelLamboRightDor.render(modelMatrixLamboBlend);
-	// 		modelLamboFrontLeftWheel.render(modelMatrixLamboBlend);
-	// 		modelLamboFrontRightWheel.render(modelMatrixLamboBlend);
-	// 		modelLamboRearLeftWheel.render(modelMatrixLamboBlend);
-	// 		modelLamboRearRightWheel.render(modelMatrixLamboBlend);
-	// 		// Se regresa el cull faces IMPORTANTE para las puertas
-	// 	}
-	// 	else if (it->second.first.compare("heli") == 0)
-	// 	{
-	// 		// Helicopter
-	// 		glm::mat4 modelMatrixHeliChasis = glm::mat4(modelMatrixHeli);
-	// 		modelHeliChasis.render(modelMatrixHeliChasis);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glDisable(GL_CULL_FACE);
+	for (std::map<float, std::pair<std::string, glm::vec3>>::reverse_iterator it = blendingSorted.rbegin(); it != blendingSorted.rend(); it++)
+	{
+		if (it->second.first.compare("aircraft") == 0)
+		{
+			// Render for the aircraft model
+			glm::mat4 modelMatrixAircraftBlend = glm::mat4(modelMatrixAircraft);
+			modelMatrixAircraftBlend[3][1] = terrain.getHeightTerrain(modelMatrixAircraftBlend[3][0], modelMatrixAircraftBlend[3][2]) + 2.0;
+			modelAircraft.render(modelMatrixAircraftBlend);
+		}
+		else if (it->second.first.compare("lambo") == 0)
+		{
+			// Lambo car
+			glm::mat4 modelMatrixLamboBlend = glm::mat4(modelMatrixLambo);
+			modelMatrixLamboBlend[3][1] = terrain.getHeightTerrain(modelMatrixLamboBlend[3][0], modelMatrixLamboBlend[3][2]);
+			modelMatrixLamboBlend = glm::scale(modelMatrixLamboBlend, glm::vec3(1.3, 1.3, 1.3));
+			modelLambo.render(modelMatrixLamboBlend);
+			glActiveTexture(GL_TEXTURE0);
+			glm::mat4 modelMatrixLamboLeftDor = glm::mat4(modelMatrixLamboBlend);
+			modelMatrixLamboLeftDor = glm::translate(modelMatrixLamboLeftDor, glm::vec3(1.08676, 0.707316, 0.982601));
+			modelMatrixLamboLeftDor = glm::rotate(modelMatrixLamboLeftDor, glm::radians(dorRotCount), glm::vec3(1.0, 0, 0));
+			modelMatrixLamboLeftDor = glm::translate(modelMatrixLamboLeftDor, glm::vec3(-1.08676, -0.707316, -0.982601));
+			modelLamboLeftDor.render(modelMatrixLamboLeftDor);
+			modelLamboRightDor.render(modelMatrixLamboBlend);
+			modelLamboFrontLeftWheel.render(modelMatrixLamboBlend);
+			modelLamboFrontRightWheel.render(modelMatrixLamboBlend);
+			modelLamboRearLeftWheel.render(modelMatrixLamboBlend);
+			modelLamboRearRightWheel.render(modelMatrixLamboBlend);
+			// Se regresa el cull faces IMPORTANTE para las puertas
+		}
+		else if (it->second.first.compare("heli") == 0)
+		{
+			// Helicopter
+			glm::mat4 modelMatrixHeliChasis = glm::mat4(modelMatrixHeli);
+			modelHeliChasis.render(modelMatrixHeliChasis);
 
-	// 		glm::mat4 modelMatrixHeliHeli = glm::mat4(modelMatrixHeliChasis);
-	// 		modelMatrixHeliHeli = glm::translate(modelMatrixHeliHeli, glm::vec3(0.0, 0.0, -0.249548));
-	// 		modelMatrixHeliHeli = glm::rotate(modelMatrixHeliHeli, rotHelHelY, glm::vec3(0, 1, 0));
-	// 		modelMatrixHeliHeli = glm::translate(modelMatrixHeliHeli, glm::vec3(0.0, 0.0, 0.249548));
-	// 		modelHeliHeli.render(modelMatrixHeliHeli);
-	// 	}
-	// }
-	// glEnable(GL_CULL_FACE);
-	// glDisable(GL_BLEND);
+			glm::mat4 modelMatrixHeliHeli = glm::mat4(modelMatrixHeliChasis);
+			modelMatrixHeliHeli = glm::translate(modelMatrixHeliHeli, glm::vec3(0.0, 0.0, -0.249548));
+			modelMatrixHeliHeli = glm::rotate(modelMatrixHeliHeli, rotHelHelY, glm::vec3(0, 1, 0));
+			modelMatrixHeliHeli = glm::translate(modelMatrixHeliHeli, glm::vec3(0.0, 0.0, 0.249548));
+			modelHeliHeli.render(modelMatrixHeliHeli);
+		}
+	}
+	glEnable(GL_CULL_FACE);
+	glDisable(GL_BLEND);
 
 	if (render)
 	{
@@ -1805,7 +1928,7 @@ void applicationLoop()
 
 	glm::vec3 lightPos = glm::vec3(10.0, 10.0, -10.0);
 
-	shadowBox = new ShadowBox(-lightPos, camera.get(), 15.0f, 0.1f, 45.f);
+	shadowBox = new ShadowBox(-lightPos, camera.get(), 15.0f, 0.1f, 45.0f);
 
 	while (psi)
 	{
@@ -1859,21 +1982,16 @@ void applicationLoop()
 		shadowBox->update(screenWidth, screenHeight);
 		glm::vec3 centerBox = shadowBox->getCenter();
 
-		float near_plane = 0.1f;
-		float far_plane = 20.0;
-		glm::mat4 lightProjection = glm::mat4(1.0), lightView = glm::mat4(1.0);
+		// Projection light shadow mapping
+		glm::mat4 lightProjection = glm::mat4(1.0f), lightView = glm::mat4(1.0f);
 		glm::mat4 lightSpaceMatrix;
-		// lightProjection = glm::ortho(-25.0f, 25.0f, -25.0f, 25.0f, near_plane, far_plane);
-		// lightSpaceMatrix = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		lightProjection[0][0] = 2.0f / shadowBox->getWidth();
 		lightProjection[1][1] = 2.0f / shadowBox->getHeight();
-		lightProjection[2][2] = 2.0f / shadowBox->getLength();
-		// lightProjection[3][2] = -()/();
+		lightProjection[2][2] = -2.0f / shadowBox->getLength();
 		lightProjection[3][3] = 1.0f;
 		lightView = glm::lookAt(centerBox, centerBox + glm::normalize(-lightPos), glm::vec3(0.0, 1.0, 0.0));
 		lightSpaceMatrix = lightProjection * lightView;
 		shaderDepth.setMatrix4("lightSpaceMatrix", 1, false, glm::value_ptr(lightSpaceMatrix));
-
 
 		// Settea la matriz de vista y projection al shader con solo color
 		shader.setMatrix4("projection", 1, false, glm::value_ptr(projection));
@@ -1888,14 +2006,22 @@ void applicationLoop()
 		shaderMulLighting.setMatrix4("projection", 1, false,
 									 glm::value_ptr(projection));
 		shaderMulLighting.setMatrix4("view", 1, false,
+									 glm::value_ptr(view));
+		shaderMulLighting.setMatrix4("lightSpaceMatrix", 1, false,
 									 glm::value_ptr(lightSpaceMatrix));
 		// Settea la matriz de vista y projection al shader con multiples luces
 		shaderTerrain.setMatrix4("projection", 1, false,
 								 glm::value_ptr(projection));
 		shaderTerrain.setMatrix4("view", 1, false,
 								 glm::value_ptr(view));
-		shaderTerrain.setMatrix4("view", 1, false,
+		shaderTerrain.setMatrix4("lightSpaceMatrix", 1, false,
 								 glm::value_ptr(lightSpaceMatrix));
+		// Settea la matriz de vista y projection al shader para el fountain
+		/*shaderParticlesFountain.setMatrix4("projection", 1, false,
+				glm::value_ptr(projection));
+		shaderParticlesFountain.setMatrix4("view", 1, false,
+				glm::value_ptr(view));*/
+
 		/*******************************************
 		 * Propiedades de neblina
 		 *******************************************/
@@ -1908,15 +2034,15 @@ void applicationLoop()
 		 *******************************************/
 		shaderMulLighting.setVectorFloat3("viewPos", glm::value_ptr(camera->getPosition()));
 		shaderMulLighting.setVectorFloat3("directionalLight.light.ambient", glm::value_ptr(glm::vec3(0.2, 0.2, 0.2)));
-		shaderMulLighting.setVectorFloat3("directionalLight.light.diffuse", glm::value_ptr(glm::vec3(0.3, 0.3, 0.3)));
-		shaderMulLighting.setVectorFloat3("directionalLight.light.specular", glm::value_ptr(glm::vec3(0.4, 0.4, 0.4)));
-		shaderMulLighting.setVectorFloat3("directionalLight.direction", glm::value_ptr(glm::vec3(-0.7071, -0.7071, 0.0)));
+		shaderMulLighting.setVectorFloat3("directionalLight.light.diffuse", glm::value_ptr(glm::vec3(0.5, 0.5, 0.5)));
+		shaderMulLighting.setVectorFloat3("directionalLight.light.specular", glm::value_ptr(glm::vec3(0.2, 0.2, 0.2)));
+		shaderMulLighting.setVectorFloat3("directionalLight.direction", glm::value_ptr(glm::vec3(-0.707106781, -0.707106781, 0.0)));
 
 		shaderTerrain.setVectorFloat3("viewPos", glm::value_ptr(camera->getPosition()));
 		shaderTerrain.setVectorFloat3("directionalLight.light.ambient", glm::value_ptr(glm::vec3(0.2, 0.2, 0.2)));
-		shaderTerrain.setVectorFloat3("directionalLight.light.diffuse", glm::value_ptr(glm::vec3(0.3, 0.3, 0.3)));
-		shaderTerrain.setVectorFloat3("directionalLight.light.specular", glm::value_ptr(glm::vec3(0.4, 0.4, 0.4)));
-		shaderTerrain.setVectorFloat3("directionalLight.direction", glm::value_ptr(glm::vec3(-0.7071, -0.7071, 0.0)));
+		shaderTerrain.setVectorFloat3("directionalLight.light.diffuse", glm::value_ptr(glm::vec3(0.5, 0.5, 0.5)));
+		shaderTerrain.setVectorFloat3("directionalLight.light.specular", glm::value_ptr(glm::vec3(0.2, 0.2, 0.2)));
+		shaderTerrain.setVectorFloat3("directionalLight.direction", glm::value_ptr(glm::vec3(-0.707106781, -0.707106781, 0.0)));
 
 		/*******************************************
 		 * Propiedades SpotLights
@@ -1925,7 +2051,7 @@ void applicationLoop()
 		shaderTerrain.setInt("spotLightCount", 1);
 		glm::vec3 spotPosition = glm::vec3(modelMatrixHeli * glm::vec4(0.0, 0.2, 1.75, 1.0));
 		shaderMulLighting.setVectorFloat3("spotLights[0].light.ambient", glm::value_ptr(glm::vec3(0.0, 0.0, 0.0)));
-		shaderMulLighting.setVectorFloat3("spotLights[0].light.diffuse", glm::value_ptr(glm::vec3(0.2, 0.2, 0.2)));
+		shaderMulLighting.setVectorFloat3("spotLights[0].light.diffuse", glm::value_ptr(glm::vec3(0.2, 0.3, 0.2)));
 		shaderMulLighting.setVectorFloat3("spotLights[0].light.specular", glm::value_ptr(glm::vec3(0.3, 0.3, 0.3)));
 		shaderMulLighting.setVectorFloat3("spotLights[0].position", glm::value_ptr(spotPosition));
 		shaderMulLighting.setVectorFloat3("spotLights[0].direction", glm::value_ptr(glm::vec3(0, -1, 0)));
@@ -1935,7 +2061,7 @@ void applicationLoop()
 		shaderMulLighting.setFloat("spotLights[0].cutOff", cos(glm::radians(12.5f)));
 		shaderMulLighting.setFloat("spotLights[0].outerCutOff", cos(glm::radians(15.0f)));
 		shaderTerrain.setVectorFloat3("spotLights[0].light.ambient", glm::value_ptr(glm::vec3(0.0, 0.0, 0.0)));
-		shaderTerrain.setVectorFloat3("spotLights[0].light.diffuse", glm::value_ptr(glm::vec3(0.2, 0.2, 0.2)));
+		shaderTerrain.setVectorFloat3("spotLights[0].light.diffuse", glm::value_ptr(glm::vec3(0.2, 0.3, 0.2)));
 		shaderTerrain.setVectorFloat3("spotLights[0].light.specular", glm::value_ptr(glm::vec3(0.3, 0.3, 0.3)));
 		shaderTerrain.setVectorFloat3("spotLights[0].position", glm::value_ptr(spotPosition));
 		shaderTerrain.setVectorFloat3("spotLights[0].direction", glm::value_ptr(glm::vec3(0, -1, 0)));
@@ -1997,7 +2123,6 @@ void applicationLoop()
 			shaderTerrain.setFloat("pointLights[" + std::to_string(lamp1Position.size() + i) + "].quadratic", 0.02);
 		}
 
-
 		/************Render de imagen de frente**************/
 		if (!iniciaPartida)
 		{
@@ -2011,39 +2136,48 @@ void applicationLoop()
 			continue;
 		}
 
-		// Paso 01. Render del buffer de profundidad desde el punto de vista de la luz
-		glClearColor(0.1, 0.1, 0.1, 0.1);
+		/*******************************************
+		 * 1.- We render the depth buffer
+		 *******************************************/
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		// render scene from light's point of view
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		glBindBuffer(GL_FRAMEBUFFER, depthMapFBO);
+		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 		glClear(GL_DEPTH_BUFFER_BIT);
-		prepareDepthScene();
 		glCullFace(GL_FRONT);
+		prepareDepthScene();
 		renderScene();
+		glCullFace(GL_BACK);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		// // Solo para debug, se comentará posteriormente
-		// glViewport(0, 0, screenWidth, screenHeight);
-		// glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		// shaderViewDepth.setMatrix4("projection", 1, false, glm::value_ptr(glm::mat4(1.0)));
-		// shaderViewDepth.setMatrix4("view", 1, false, glm::value_ptr(glm::mat4(1.0)));
-		// shaderViewDepth.setFloat("near_plane", near_plane);
-		// shaderViewDepth.setFloat("far_plane", far_plane);
-		// glActiveTexture(GL_TEXTURE0);
-		// glBindTexture(GL_TEXTURE_2D, depthMap);
-		// boxViewDepth.setScale(glm::vec3(2.0, 2.0, 1.0));
-		// boxViewDepth.render();
+		/*******************************************
+		 * Debug to view the texture view map
+		 *******************************************/
+		// reset viewport
+		/*glViewport(0, 0, screenWidth, screenHeight);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		// render Depth map to quad for visual debugging
+		shaderViewDepth.setMatrix4("projection", 1, false, glm::value_ptr(glm::mat4(1.0)));
+		shaderViewDepth.setMatrix4("view", 1, false, glm::value_ptr(glm::mat4(1.0)));
+		shaderViewDepth.setFloat("near_plane", near_plane);
+		shaderViewDepth.setFloat("far_plane", far_plane);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		boxViewDepth.setScale(glm::vec3(2.0, 2.0, 1.0));
+		boxViewDepth.render();*/
 
-		// Paso 01. Render de normal de los objetos
+		/*******************************************
+		 * 2.- We render the normal objects
+		 *******************************************/
 		glViewport(0, 0, screenWidth, screenHeight);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		prepareScene();
-		glActiveTexture(GL_TEXTURE20);
+		glActiveTexture(GL_TEXTURE10);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
-		shaderMulLighting.setInt("shadowMap", 20);
-		shaderTerrain.setInt("shadowMap", 20);
+		shaderMulLighting.setInt("shadowMap", 10);
+		shaderTerrain.setInt("shadowMap", 10);
 		renderSolidScene();
-		renderAlphaScene(true);
 
 		/*******************************************
 		 * Creacion de colliders
@@ -2166,26 +2300,7 @@ void applicationLoop()
 		}
 
 		/**********Render de transparencias***************/
-		/**********
-		 * Update the position with alpha objects
-		 */
-		// Update the aircraft
-		blendingUnsorted.find("aircraft")->second = glm::vec3(modelMatrixAircraft[3]);
-		// Update the lambo
-		blendingUnsorted.find("lambo")->second = glm::vec3(modelMatrixLambo[3]);
-		// Update the helicopter
-		blendingUnsorted.find("heli")->second = glm::vec3(modelMatrixHeli[3]);
-
-		/**********
-		 * Sorter with alpha objects
-		 */
-		std::map<float, std::pair<std::string, glm::vec3>> blendingSorted;
-		std::map<std::string, glm::vec3>::iterator itblend;
-		for (itblend = blendingUnsorted.begin(); itblend != blendingUnsorted.end(); itblend++)
-		{
-			float distanceFromView = glm::length(camera->getPosition() - itblend->second);
-			blendingSorted[distanceFromView] = std::make_pair(itblend->first, itblend->second);
-		}
+		renderAlphaScene();
 
 		/*********************Prueba de colisiones****************************/
 		for (std::map<std::string,

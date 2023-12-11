@@ -86,22 +86,23 @@ float calculateShadow(vec3 lightDir){
 	// float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
 
 	// This is the third version of the shadow mapping with shadow bias to correct the shadow acne
-	vec3 normal = normalize(our_normal);
-	float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.001);  
-	float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
+	// vec3 normal = normalize(our_normal);
+	// float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.001);  
+	// float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
 
 	// This is the four version of the shadow mapping with shadow bias to correct the shadow acne
 	// vec3 normal = normalize(our_normal);
 	// float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.001);  
 	// float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
 	// if(projCoords.z > 1.0)
-    //	shadow = 0.0;
+    // 	shadow = 0.0;
 
 
     // This is the final version of the shadow mapping with shadow bias to correct the shadow acne
-    /*vec3 normal = normalize(our_normal);
+    vec3 normal = normalize(our_normal);
 	float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.001);  
 	float shadow = 0.0;
+	// Filtro de convolución
 	vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
 	for(int x = -1; x <= 1; ++x)
 	{
@@ -113,7 +114,7 @@ float calculateShadow(vec3 lightDir){
 	}
 	shadow /= 9.0;
 	if(projCoords.z > 1.0)
-        shadow = 0.0;*/
+        shadow = 0.0;
 
     return shadow;
 }
